@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Library Dashboard</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
+    input, button { padding: 6px; margin: 4px; }
+    .error { color: red; font-weight: bold; }
+    .success { color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2>📚 Library Book Management Dashboard</h2>
+
+<!-- MESSAGE AREA -->
+<p id="msg"></p>
+
+<!-- CREATE BOOK -->
+<h3>Add New Book</h3>
+<input id="title" placeholder="Title">
+<input id="author" placeholder="Author">
+<input id="category" placeholder="Category">
+<input id="year" placeholder="Year" type="number">
+<input id="copies" placeholder="Copies" type="number">
+<button onclick="addBook()">Add Book</button>
+
+<!-- BOOK TABLE -->
+<h3>Books</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Category</th>
+      <th>Year</th>
+      <th>Copies</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="books"></tbody>
+</table>
+
+<script>
+const msg = document.getElementById("msg");
+
+function showMessage(text, type) {
+  msg.textContent = text;
+  msg.className = type;
+}
+
+/* READ */
+function loadBooks() {
+  fetch("/books")
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("books");
+      tbody.innerHTML = "";
+      data.forEach(b => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${b.title}</td>
+            <td>${b.author}</td>
+            <td>${b.category}</td>
+            <td>${b.publishedYear}</td>
+            <td>${b.availableCopies}</td>
+            <td>
+              <button onclick="updateCopies('${b._id}', 1)">+1</button>
+              <button onclick="updateCopies('${b._id}', -1)">-1</button>
+              <button onclick="deleteBook('${b._id}')">Delete</button>
+            </td>
+          </tr>`;
+      });
+    });
+}
+
+/* CREATE */
+function addBook() {
+  fetch("/books", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: title.value,
+      author: author.value,
+      category: category.value,
+      publishedYear: year.value,
+      availableCopies: copies.value
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      showMessage(data.error, "error");
+    } else {
+      showMessage("Book added successfully", "success");
+      loadBooks();
+    }
+  });
+}
+
+/* UPDATE */
+function updateCopies(id, change) {
+  fetch(`/books/${id}/copies`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ change })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      showMessage(data.error, "error");
+    } else {
+      showMessage("Copies updated", "success");
+      loadBooks();
+    }
+  });
+}
+
+/* DELETE */
+function deleteBook(id) {
+  fetch(`/books/${id}`, { method: "DELETE" })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      showMessage(data.error, "error");
+    } else {
+      showMessage("Book deleted", "success");
+      loadBooks();
+    }
+  });
+}
+
+loadBooks();
+</script>
+
+</body>
+</html>
